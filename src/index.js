@@ -14,7 +14,6 @@ const publicDirectoryPath = path.join(__dirname, '../public');
 app.use(express.static(publicDirectoryPath));
 
 io.on('connection', (socket) => {
-    
     console.log('New websocket connection')
     socket.on('join', ({ username, room }, callback) => {
         const { error, user } = addUser({ id: socket.id, username, room })
@@ -49,7 +48,18 @@ io.on('connection', (socket) => {
             longitude: longitude
         });
     })
-,
+
+    socket.on('sendAudio', (eventData) => {
+        const user = getUser(socket.id);
+        if (!user) return;
+        io.to(user.room).emit('personChatMessage', {
+            text: '',
+            username: user.username,
+            isAudio: true,
+            audioUrl: eventData.audioUrl
+        });
+    })
+
     socket.on('disconnect', () => {
         const user = removeUser(socket.id)
         if (user) {

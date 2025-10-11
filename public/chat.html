@@ -25,6 +25,7 @@
 
             <form id="chatForm" class="compose">    
                 <button type="button" id="sendLocation" class="icon-btn" title="Send location">📍</button>
+                <button type="button" id="recordAudio" class="icon-btn" title="Record audio">🎤</button>
                 <input type="text" id="message" placeholder="Type a message">
                 <button id="send" class="send-btn">Send</button>
             </form>
@@ -61,6 +62,26 @@
                         />
                         <div>📍 Shared location</div>
                     </a>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script id="audio-template" type="text/html">
+        <div class="message {{messageClass}}">
+            <div class="avatar">{{avatar}}</div>
+            <div class="bubble">
+                <div class="message-header">
+                    <span class="username">{{username}}</span>
+                    <span class="timestamp">{{createdAt}}</span>
+                </div>
+                <div class="message-body">
+                    <audio controls style="width: 100%; margin-top: 8px;">
+                        <source src="{{audioUrl}}" type="audio/mpeg">
+                        <source src="{{audioUrl}}" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
+                    <div style="margin-top: 4px; color: #6b7280; font-size: 0.9rem;">🎵 Audio message</div>
                 </div>
             </div>
         </div>
