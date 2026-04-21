@@ -1,13 +1,21 @@
 const path = require('path');
-const envPath = path.join(__dirname, '..', '.env');
-const dotenvResult = require('dotenv').config({ path: envPath });
-if (dotenvResult.error) {
-    if (dotenvResult.error.code === 'ENOENT') {
-        console.warn(`[env] No .env file at ${envPath} (create it with ANTHROPIC_API_KEY=...)`);
-    } else {
-        console.warn('[env]', dotenvResult.error.message);
-    }
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+let localKey = '';
+try {
+    localKey = require('./config.local').ANTHROPIC_API_KEY || '';
+} catch (_) {
+    /* optional gitignored file */
 }
+
+/** Set via `.env` (ANTHROPIC_API_KEY=...) or `src/config.local.js` — never commit real keys. */
+const ANTHROPIC_API_KEY = String(process.env.ANTHROPIC_API_KEY || localKey || '').trim();
+
+/** Optional overrides; defaults match ClaudeCompanion. */
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-haiku-4-5'
+const COMPANION_DISPLAY_NAME = 'ChatWave AI'
+const COMPANION_COOLDOWN_MS = 4000
+
 const http = require('http');
 const crypto = require('crypto');
 const express = require('express');
@@ -19,9 +27,12 @@ const { addUser, removeUser, getUser, getUsersInRoom } = require('./utils/users'
 const { appendMessage: appendRoomMessage, getHistory: getRoomHistory } = require('./utils/roomHistory')
 const { ClaudeCompanion } = require('./companion/ClaudeCompanion')
 
-const companion = new ClaudeCompanion()
-const AI_DISPLAY_NAME = (process.env.COMPANION_DISPLAY_NAME || 'ChatWave AI').trim()
-const companionAskCooldownMs = Number(process.env.COMPANION_COOLDOWN_MS) || 4000
+const companion = new ClaudeCompanion({
+    apiKey: ANTHROPIC_API_KEY,
+    model: CLAUDE_MODEL,
+})
+const AI_DISPLAY_NAME = COMPANION_DISPLAY_NAME.trim()
+const companionAskCooldownMs = Number(COMPANION_COOLDOWN_MS) || 4000
 const lastCompanionAsk = new Map()
 
 const PORT = 3001; //process.env.PORT || 3001;
@@ -67,7 +78,9 @@ io.on('connection', (socket) => {
         const user = getUser(socket.id)
         if (!user) return done('User not found')
         if (!companion.isConfigured()) {
-            return done('AI companion is not configured (set ANTHROPIC_API_KEY).')
+            return done(
+                'AI companion is not configured. Set ANTHROPIC_API_KEY in project root `.env` or in gitignored `src/config.local.js` (see `src/config.local.example.js`).'
+            )
         }
         const trimmed = String(prompt ?? '').trim().slice(0, 4000)
         if (!trimmed) return done('Prompt is required')

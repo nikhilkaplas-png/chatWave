@@ -5,14 +5,10 @@ class ClaudeCompanion {
      * @param {{ apiKey?: string, model?: string, systemPrompt?: string }} [options]
      */
     constructor(options = {}) {
-        this.apiKey = (options.apiKey || process.env.ANTHROPIC_API_KEY || '').trim();
-        this.model =
-            options.model ||
-            process.env.CLAUDE_MODEL ||
-            'claude-haiku-4-5';
+        this.apiKey = (options.apiKey || '').trim();
+        this.model = options.model || 'claude-haiku-4-5';
         this.systemPrompt =
             options.systemPrompt ||
-            process.env.CLAUDE_COMPANION_PROMPT ||
             'You are ChatWave AI, a concise friendly assistant in a group chat. ' +
                 'Use plain text. Do not pretend to be human users. Keep replies reasonably short unless asked for detail.';
     }
