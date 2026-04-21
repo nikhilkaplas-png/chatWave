@@ -26,6 +26,15 @@ io.on('connection', (socket) => {
         callback()
     })
 
+    socket.on('typing', ({ isTyping }) => {
+        const user = getUser(socket.id)
+        if (!user) return
+        socket.broadcast.to(user.room).emit('userTyping', {
+            username: user.username,
+            isTyping: Boolean(isTyping)
+        })
+    })
+
     socket.on('sendMessage', (eventData, callback) => {
         console.log('sendMessage', JSON.stringify(eventData))
         const user = getUser(socket.id)
@@ -56,13 +65,14 @@ io.on('connection', (socket) => {
             text: '',
             username: user.username,
             isAudio: true,
-            audioUrl: eventData.audioUrl
+            audioData: eventData.audioData // Cross-browser compatible base64
         });
     })
 
     socket.on('disconnect', () => {
         const user = removeUser(socket.id)
         if (user) {
+            io.to(user.room).emit('userTyping', { username: user.username, isTyping: false })
             io.to(user.room).emit('personChatMessage', { text: `${user.username} has left the chat`, username: user.username })
             io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room) })
         }

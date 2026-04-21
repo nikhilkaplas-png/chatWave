@@ -116,6 +116,20 @@ h1 {
     flex-direction: column;
 }
 
+.typing-indicator {
+    min-height: 1.25rem;
+    padding: 0 20px 8px;
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-style: italic;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.typing-indicator.typing-indicator--visible {
+    opacity: 1;
+}
+
 /* Message Styles */
 .message {
     margin-bottom: 16px;

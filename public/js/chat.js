@@ -6,6 +6,12 @@ const $sendLocation = document.querySelector('#sendLocation')
 const $recordAudio = document.querySelector('#recordAudio')
 
 const $messages = document.querySelector('#messages')
+const $typingIndicator = document.querySelector('#typingIndicator')
+
+// Who is currently typing (other users only; keyed by lowercase username)
+const typingUsers = new Map()
+let typingStopTimer = null
+let sentTypingActive = false
 
 // Audio recording variables
 let mediaRecorder = null
@@ -21,6 +27,45 @@ const { username, room } = Qs.parse(location.search, { ignoreQueryPrefix: true }
 
 // Helper to capitalize first letter
 const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
+
+function renderTypingIndicator() {
+    if (!$typingIndicator) return
+    const names = [...typingUsers.values()]
+    if (names.length === 0) {
+        $typingIndicator.textContent = ''
+        $typingIndicator.classList.remove('typing-indicator--visible')
+        return
+    }
+    $typingIndicator.classList.add('typing-indicator--visible')
+    if (names.length === 1) {
+        $typingIndicator.textContent = `${names[0]} is typing…`
+    } else if (names.length === 2) {
+        $typingIndicator.textContent = `${names[0]} and ${names[1]} are typing…`
+    } else {
+        $typingIndicator.textContent = `${names.length} people are typing…`
+    }
+}
+
+function clearLocalTypingBroadcast() {
+    clearTimeout(typingStopTimer)
+    typingStopTimer = null
+    if (sentTypingActive) {
+        socket.emit('typing', { isTyping: false })
+        sentTypingActive = false
+    }
+}
+
+socket.on('userTyping', ({ username: typerName, isTyping }) => {
+    if (!typerName) return
+    if (typerName.toLowerCase() === username.toLowerCase()) return
+    const key = typerName.toLowerCase()
+    if (isTyping) {
+        typingUsers.set(key, capitalize(typerName))
+    } else {
+        typingUsers.delete(key)
+    }
+    renderTypingIndicator()
+})
 
 socket.on('roomData', ({ room, users }) => {
     const html = Mustache.render(sidebarTemplate, {
@@ -48,10 +93,10 @@ socket.on('personChatMessage', (eventData) => {
             longitude: eventData.longitude
         });
         $messages.insertAdjacentHTML('beforeend', html);
-    } else if (isAudio && eventData.audioUrl) {
+    } else if (isAudio && eventData.audioData) {
         const audioTemplate = document.querySelector('#audio-template').innerHTML;
         const html = Mustache.render(audioTemplate, {
-            audioUrl: eventData.audioUrl,
+            audioUrl: eventData.audioData, // Now using base64 data
             username: displayName,
             createdAt: moment().format('h:mm a'),
             messageClass: isOwn ? 'my-message' : 'other-message',
@@ -71,6 +116,30 @@ socket.on('personChatMessage', (eventData) => {
     $messages.scrollTop = $messages.scrollHeight;
 })
 
+$messageInput.addEventListener('input', () => {
+    const hasText = $messageInput.value.trim().length > 0
+    if (hasText) {
+        if (!sentTypingActive) {
+            socket.emit('typing', { isTyping: true })
+            sentTypingActive = true
+        }
+        clearTimeout(typingStopTimer)
+        typingStopTimer = setTimeout(() => {
+            socket.emit('typing', { isTyping: false })
+            sentTypingActive = false
+            typingStopTimer = null
+        }, 1200)
+    } else {
+        clearLocalTypingBroadcast()
+    }
+})
+
+$messageInput.addEventListener('blur', () => {
+    if (!$messageInput.value.trim()) {
+        clearLocalTypingBroadcast()
+    }
+})
+
 $messageForm.addEventListener('submit', (e) => {
     e.preventDefault()
     $messageButton.setAttribute('disabled', 'disabled')
@@ -83,6 +152,7 @@ $messageForm.addEventListener('submit', (e) => {
     socket.emit('sendMessage', eventData, (error) => {
         $messageButton.removeAttribute('disabled')
         $messageInput.value = ''
+        clearLocalTypingBroadcast()
         $messageInput.focus()
         if (error) {
             return console.log(message)
@@ -129,14 +199,20 @@ $recordAudio.addEventListener('click', async () => {
 
             mediaRecorder.onstop = () => {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const audioUrl = URL.createObjectURL(audioBlob);
                 
-                // Send audio message to server
-                socket.emit('sendAudio', {
-                    audioUrl: audioUrl,
-                    username: username,
-                    room: room
-                });
+                // Convert to base64 for cross-browser compatibility
+                const reader = new FileReader();
+                reader.onload = function() {
+                    const base64Audio = reader.result; // "data:audio/wav;base64,..."
+                    
+                    // Send audio message to server
+                    socket.emit('sendAudio', {
+                        audioData: base64Audio, // Cross-browser compatible
+                        username: username,
+                        room: room
+                    });
+                };
+                reader.readAsDataURL(audioBlob);
                 
                 // Clean up
                 stream.getTracks().forEach(track => track.stop());
