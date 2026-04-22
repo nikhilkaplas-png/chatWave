@@ -4,7 +4,7 @@
   "description": "Real-time chat application with Socket.io",
   "main": "src/index.js",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -16,7 +16,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^9.4.0",
+    "better-sqlite3": "11.10.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "16.6.1",
     "express": "4.16.4",
