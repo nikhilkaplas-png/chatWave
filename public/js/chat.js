@@ -274,9 +274,9 @@
 
     const $logoutBtn = document.getElementById('logout');
     if ($logoutBtn) {
-        $logoutBtn.addEventListener('click', async () => {
-            await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
-            window.location.href = '/';
+        $logoutBtn.addEventListener('click', () => {
+            // Leave current room but keep user signed in.
+            window.location.href = '/join';
         });
     }
 
