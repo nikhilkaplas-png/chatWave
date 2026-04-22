@@ -56,6 +56,10 @@ app.use(sessionMiddleware);
 
 app.use('/api', authRouter);
 
+app.get('/health', (req, res) => {
+    res.status(200).type('text/plain').send('ok');
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(publicDirectoryPath, 'home.html'));
 });
@@ -203,6 +207,6 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server listening on 0.0.0.0:${PORT}`);
 });

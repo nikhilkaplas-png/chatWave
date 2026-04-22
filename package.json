@@ -9,7 +9,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "render-build": "npm ci --no-audit --no-fund"
   },
   "author": "Nikhil",
   "license": "ISC",
