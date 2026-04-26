@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Real-time chat application with Socket.io",
   "main": "src/index.js",
+  "packageManager": "pnpm@9.15.4",
   "engines": {
     "node": "20.x"
   },
@@ -10,7 +11,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "render-build": "npm ci --omit=dev --no-audit --no-fund && node -e \"require('express'); console.log('deps ok')\""
+    "render-build": "corepack enable && corepack prepare pnpm@9.15.4 --activate && pnpm install --prod --frozen-lockfile && node -e \"require('express'); console.log('deps ok')\""
   },
   "author": "Nikhil",
   "license": "ISC",
